@@ -140,7 +140,8 @@ try {
 	const store = panelProps.store;
 	store.set({ terms: [], level: "intermediate", strictness: 50, error: null });
 	const emptyTree = panel({ ...panelProps, store });
-	ok("空状态渲染", JSON.stringify(emptyTree).includes("还没有词条"));
+	const emptyText = JSON.stringify(emptyTree);
+	ok("空状态渲染", /还没有术语|还没有词条/.test(emptyText), emptyText.slice(0, 80));
 } catch (error) {
 	ok("空状态渲染", false, error.message);
 }
@@ -298,6 +299,15 @@ ok("通用缩写被过滤", !picked.includes("CUDA") || true, picked.join(","));
 ok("数量受 limit 限制", guide.extractCandidates(answer, [], 2).length <= 2);
 ok("按出现次数排序（VLA 出现两次在前）", picked[0] === "VLA", picked.join(","));
 ok("空文本返回空数组", guide.extractCandidates("", ["x"], 2).length === 0);
+
+// ---------- 6. Per-conversation scope ----------
+console.log("\n== 6) 展示按对话过滤 ==");
+const allTerms = [{ term: "RTOS" }, { term: "VLA" }, { term: "KV Cache" }];
+const scoped = guide.filterTermsForText(allTerms, "本对话在讲 VLA 与机器人");
+ok("只保留对话里出现的词", scoped.length === 1 && scoped[0].term === "VLA", scoped.map((t) => t.term).join(","));
+ok("大小写不敏感", guide.filterTermsForText([{ term: "vla" }], "VLA 是模型").length === 1);
+ok("空对话返回空", guide.filterTermsForText(allTerms, "").length === 0);
+ok("无关对话返回空", guide.filterTermsForText(allTerms, "今天天气不错").length === 0);
 
 console.log(`\n${failures === 0 ? "全部通过 ✅" : `${failures} 项失败 ❌`}`);
 process.exit(failures === 0 ? 0 : 1);

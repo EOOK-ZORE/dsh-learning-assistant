@@ -1,6 +1,6 @@
 {
   "name": "dsh-plugin-term-guide",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "术语向导：模型照常回答，插件补它没解释的专业词——右侧栏知识树 + 正文高亮 + 一句话解释与学习路径。",
   "icon": "./icon.svg",
   "keywords": [

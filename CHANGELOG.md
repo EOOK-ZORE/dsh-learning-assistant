@@ -4,6 +4,17 @@ All notable changes to this plugin are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1] — 2026-11-14
+
+### Added
+- 面板默认**只显示本对话涉及的词**：记忆仍是全局的（跨对话不重复解释），但展示按当前对话过滤。
+  顶部「本对话 N / 全部 M」可一键切到全部记忆。
+- 纯函数 `guide.filterTermsForText()`（大小写不敏感；空对话返回空；拿不到对话容器时退回全部）。
+- 对话标题栏常驻「术语 N」按钮，作为与内容状态无关的入口。
+
+### Fixed
+- 无词条时插件不可达：只注册右侧栏标签时，右栏未展开就没有入口。
+
 ## [0.2.0] — 2026-11-14
 
 ### Changed
