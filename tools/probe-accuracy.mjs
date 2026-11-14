@@ -76,8 +76,8 @@ await page.waitForTimeout(2000);
 // Step 2: from the deepest card upwards, take the first term that is actually
 // highlighted (a term split across inline nodes is not highlighted at all).
 const cards = await page.evaluate(() => {
-	const scroller = document.querySelector("[data-term-guide-scroll]");
-	return [...(scroller?.querySelectorAll("[data-term-guide-card]") ?? [])].map((n) => n.getAttribute("data-term-guide-card"));
+	const scroller = document.querySelector("[data-learning-assistant-scroll]");
+	return [...(scroller?.querySelectorAll("[data-learning-assistant-card]") ?? [])].map((n) => n.getAttribute("data-learning-assistant-card"));
 });
 
 let chosen = null;
@@ -96,8 +96,8 @@ if (chosen !== null) {
 	await page.mouse.click(chosen.spot.x, chosen.spot.y);
 	await page.waitForTimeout(2600);
 	const acc = await page.evaluate((term) => {
-		const scroller = document.querySelector("[data-term-guide-scroll]");
-		const card = [...(scroller?.querySelectorAll("[data-term-guide-card]") ?? [])].find((n) => n.getAttribute("data-term-guide-card") === term);
+		const scroller = document.querySelector("[data-learning-assistant-scroll]");
+		const card = [...(scroller?.querySelectorAll("[data-learning-assistant-card]") ?? [])].find((n) => n.getAttribute("data-learning-assistant-card") === term);
 		if (!scroller || !card) return { ok: false };
 		const sb = scroller.getBoundingClientRect();
 		const cb = card.getBoundingClientRect();
@@ -119,7 +119,7 @@ if (chosen !== null) {
 		window.__samples = [];
 		window.__poll = setInterval(() => {
 			const root = document.querySelector("[data-conversation-scroll]");
-			const h = CSS.highlights.get("term-guide-flash");
+			const h = CSS.highlights.get("learning-assistant-flash");
 			const box = root.getBoundingClientRect();
 			const inView = h ? [...h].some((r) => {
 				const b = r.getBoundingClientRect();
@@ -128,7 +128,7 @@ if (chosen !== null) {
 			window.__samples.push({ flash: h ? [...h].length : 0, inView, scrollTop: Math.round(root.scrollTop) });
 		}, 60);
 	});
-	await page.locator(`[data-term-guide-card="${chosen.term}"]`).first().dblclick();
+	await page.locator(`[data-learning-assistant-card="${chosen.term}"]`).first().dblclick();
 	await page.waitForTimeout(2800);
 	const samples = await page.evaluate(() => {
 		clearInterval(window.__poll);

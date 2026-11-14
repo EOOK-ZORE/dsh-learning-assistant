@@ -1,4 +1,4 @@
-// Functional self-check for the term-guide plugin, both halves.
+// Functional self-check for the learning-assistant plugin, both halves.
 import vm from "node:vm";
 import fs from "node:fs";
 import os from "node:os";
@@ -37,7 +37,7 @@ const sandbox = {
 vm.createContext(sandbox);
 vm.runInContext(code, sandbox);
 ok("bundle 调用了 __ModuleLoader__.load", captured.descriptor !== undefined);
-ok("bundle id 正确", captured.descriptor?.id === "dsh-plugin-term-guide", captured.descriptor?.id);
+ok("bundle id 正确", captured.descriptor?.id === "dsh-learning-assistant", captured.descriptor?.id);
 
 const React = {
 	// Render function components the way React does, so the assertions below
@@ -87,12 +87,12 @@ ok("exports.apply 存在", typeof mod.apply === "function");
 ok("exports.inject 正确", Array.isArray(mod.inject) && mod.inject.includes("slots"), JSON.stringify(mod.inject));
 mod.apply(ctxClient);
 const names = registered.map((r) => `${r.definition.name}:${r.definition.id ?? r.definition.key}`);
-ok("注册了右侧栏标签类型", tabTypes.length === 1 && tabTypes[0].kind === "term-guide", JSON.stringify(tabTypes));
+ok("注册了右侧栏标签类型", tabTypes.length === 1 && tabTypes[0].kind === "learning-assistant", JSON.stringify(tabTypes));
 ok("标签有标题", typeof tabTypes[0]?.title === "function" && tabTypes[0].title() === "术语");
-ok("注册了标签主体", names.includes("sidebar.right.pane.tab:dsh-plugin-term-guide/tab"), names.join(", "));
+ok("注册了标签主体", names.includes("sidebar.right.pane.tab:dsh-learning-assistant/tab"), names.join(", "));
 ok("不再占用中间主区域（不会盖住对话）", !names.some((n) => n.startsWith("main:") || n.startsWith("sidebar.panellist:")));
 ok("面板组件是函数", typeof registered.find((r) => r.definition.name === "sidebar.right.pane.tab")?.component === "function");
-ok("注册了常驻入口（对话头部按钮）", names.includes("conversation.session.header.actions:term-guide-entry"), names.join(", "));
+ok("注册了常驻入口（对话头部按钮）", names.includes("conversation.session.header.actions:learning-assistant-entry"), names.join(", "));
 
 // Render the panel with seeded state to prove the tree renders.
 const panel = registered.find((r) => r.definition.name === "sidebar.right.pane.tab").component;
@@ -151,7 +151,7 @@ console.log("\n== 2) Host 半 ==");
 const home = fs.mkdtempSync(path.join(os.tmpdir(), "tg-home-"));
 process.env.DSH_HOME = home;
 const host = await import(path.join(pluginDir, "lib/index.js"));
-ok("host name", host.name === "term-guide", host.name);
+ok("host name", host.name === "learning-assistant", host.name);
 ok("host inject 含 tools/webServer", host.inject.includes("tools") && host.inject.includes("webServer"), JSON.stringify(host.inject));
 
 let toolDef;
@@ -176,8 +176,8 @@ const ctxHost = {
 };
 host.apply(ctxHost, { level: "intermediate", strictness: 50 });
 ok("注册了 explain_terms 工具", toolDef?.name === "explain_terms", toolDef?.name);
-ok("注册了 /term-guide 路由", routeRegistration?.path === "/term-guide", routeRegistration?.path);
-ok("注册了系统提示段", promptSection?.name === "term-guide");
+ok("注册了 /learning-assistant 路由", routeRegistration?.path === "/learning-assistant", routeRegistration?.path);
+ok("注册了系统提示段", promptSection?.name === "learning-assistant");
 
 const result = await toolDef.execute({
 	terms: [
@@ -189,7 +189,7 @@ const result = await toolDef.execute({
 });
 ok("工具返回 saved=2", result.saved === 2, JSON.stringify(result));
 ok("严格度自适应 +10", result.strictness === 60, String(result.strictness));
-const memoryFile = path.join(home, "dsh-plugin-term-guide", "terms.json");
+const memoryFile = path.join(home, "dsh-learning-assistant", "terms.json");
 ok("记忆文件已写入", fs.existsSync(memoryFile));
 const memory = JSON.parse(fs.readFileSync(memoryFile, "utf8"));
 ok("记忆含 2 个词条", memory.terms.length === 2, String(memory.terms.length));
@@ -208,7 +208,7 @@ const fakeRes = {
 	writeHead(status, headers) { this.status = status; this.headers = headers; },
 	end(text) { this.body = text; }
 };
-await routeRegistration.handler(Object.assign(Readable.from([]), { method: "GET", url: "/term-guide/state" }), fakeRes);
+await routeRegistration.handler(Object.assign(Readable.from([]), { method: "GET", url: "/learning-assistant/state" }), fakeRes);
 ok("GET /state 200", fakeRes.status === 200, String(fakeRes.status));
 const state = JSON.parse(fakeRes.body);
 ok("state 含词条", state.terms.length === 2);
@@ -216,12 +216,12 @@ ok("state 含 level", state.level === "intermediate");
 
 // POST /level
 const res2 = { status: 0, body: "", writeHead(s) { this.status = s; }, end(t) { this.body = t; } };
-await routeRegistration.handler(Object.assign(Readable.from([Buffer.from(JSON.stringify({ level: "expert" }))]), { method: "POST", url: "/term-guide/level" }), res2);
+await routeRegistration.handler(Object.assign(Readable.from([Buffer.from(JSON.stringify({ level: "expert" }))]), { method: "POST", url: "/learning-assistant/level" }), res2);
 ok("POST /level 生效", JSON.parse(res2.body).level === "expert", res2.body);
 
 // POST /forget
 const res3 = { status: 0, body: "", writeHead(s) { this.status = s; }, end(t) { this.body = t; } };
-await routeRegistration.handler(Object.assign(Readable.from([Buffer.from(JSON.stringify({ term: "KV Cache" }))]), { method: "POST", url: "/term-guide/forget" }), res3);
+await routeRegistration.handler(Object.assign(Readable.from([Buffer.from(JSON.stringify({ term: "KV Cache" }))]), { method: "POST", url: "/learning-assistant/forget" }), res3);
 ok("POST /forget 生效", JSON.parse(res3.body).terms.length === 1, res3.body);
 
 // ---------- 3. Inline highlighting ----------
@@ -264,8 +264,8 @@ const bundleText = fs.readFileSync(path.join(pluginDir, "lib/client.js"), "utf8"
 ok("bundle 里内联了高亮模块", bundleText.includes("CSS.highlights"));
 ok("只保留高亮：已移除悬停气泡", !bundleText.includes("点击查看完整学习路径") && !bundleText.includes("role\", \"tooltip"));
 ok("高亮器暴露 flash()", typeof noDom.flash === "function");
-ok("卡片带稳定锚点与双击", bundleText.includes("data-term-guide-card") && bundleText.includes("onDoubleClick"));
-ok("有独立的闪烁高亮层", bundleText.includes("term-guide-flash"));
+ok("卡片带稳定锚点与双击", bundleText.includes("data-learning-assistant-card") && bundleText.includes("onDoubleClick"));
+ok("有独立的闪烁高亮层", bundleText.includes("learning-assistant-flash"));
 ok("高亮范围限定在对话区", bundleText.includes("data-conversation-scroll"));
 
 // ---------- 4. Knowledge tree ----------

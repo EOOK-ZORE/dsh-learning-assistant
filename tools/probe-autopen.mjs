@@ -4,7 +4,7 @@ import { chromium } from "playwright-core";
 import fs from "node:fs";
 
 const TOKEN_URL = process.argv[2];
-const MEMORY = "/home/y/.dsh/dsh-plugin-term-guide/terms.json";
+const MEMORY = "/home/y/.dsh/dsh-learning-assistant/terms.json";
 const EXE = "/home/y/.cache/ms-playwright/chromium-1223/chrome-linux64/chrome";
 
 const browser = await chromium.launch({ executablePath: EXE, headless: true, args: ["--no-sandbox"] });
@@ -26,12 +26,12 @@ if (await sessionRow.count()) await sessionRow.click();
 await page.waitForTimeout(4000);
 
 const afterOpen = await page.evaluate(() => {
-  const highlight = window.CSS?.highlights?.get?.("term-guide") ?? null;
+  const highlight = window.CSS?.highlights?.get?.("learning-assistant") ?? null;
   return {
     panelOpen: document.body.innerText.includes("术语向导"),
     transcriptChars: (document.querySelector("[data-conversation-scroll]")?.innerText ?? "").length,
     highlightRanges: highlight ? [...highlight].length : 0,
-    hasStyleRule: [...document.querySelectorAll("style[data-term-guide]")].length
+    hasStyleRule: [...document.querySelectorAll("style[data-learning-assistant]")].length
   };
 });
 console.log("打开会话后:", JSON.stringify(afterOpen));

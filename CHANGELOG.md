@@ -36,8 +36,8 @@ All notable changes to this plugin are recorded here. The format follows
 ## [0.1.0] — 2026-11-13
 
 ### Added
-- Host 半：`explain_terms` 工具、系统提示段、`/term-guide` HTTP 路由、
-  `$DSH_HOME/dsh-plugin-term-guide/terms.json` 记忆文件。
+- Host 半：`explain_terms` 工具、系统提示段、`/learning-assistant` HTTP 路由、
+  `$DSH_HOME/dsh-learning-assistant/terms.json` 记忆文件。
 - Client 半：右侧栏「术语」标签、词条卡片、知识树视图、正文高亮
   （CSS Custom Highlight）、点击词定位卡片、双击卡片闪烁正文。
 - 双向定位的滚动校正（`waitForScrollSettle` + 落点复核）。

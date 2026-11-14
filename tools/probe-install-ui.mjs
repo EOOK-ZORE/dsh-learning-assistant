@@ -1,7 +1,7 @@
 import { chromium } from "playwright-core";
 
 const url = process.argv[2];
-const spec = process.argv[3] || "/home/y/2026-11-13-11-29-22/dsh-plugin-term-guide";
+const spec = process.argv[3] || "/home/y/2026-11-13-11-29-22/dsh-learning-assistant";
 
 const b = await chromium.launch({ executablePath: "/home/y/.cache/ms-playwright/chromium-1223/chrome-linux64/chrome", headless: true, args: ["--no-sandbox"] });
 const p = await b.newPage({ viewport: { width: 1400, height: 950 } });

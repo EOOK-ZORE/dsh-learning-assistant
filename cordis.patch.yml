@@ -1,4 +1,4 @@
-# Patch layer of the `dsh-plugin-term-guide` bundle.
+# Patch layer of the `dsh-learning-assistant` bundle.
 #
 # One row only: the package's own host half. The browser half is not a row —
 # `dsh.client` in package.json declares it, so the Client module system picks
@@ -7,8 +7,8 @@
 # The host half owns the memory file and the HTTP surface the page reads.
 
 - insert:
-    - id: term-guide
-      name: 'dsh-plugin-term-guide'
+    - id: learning-assistant
+      name: 'dsh-learning-assistant'
       config:
         level: intermediate
         strictness: 50

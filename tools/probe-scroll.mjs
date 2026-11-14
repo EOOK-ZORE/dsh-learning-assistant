@@ -4,7 +4,7 @@ import { chromium } from "playwright-core";
 import fs from "node:fs";
 
 const TOKEN_URL = process.argv[2];
-const MEMORY = "/home/y/.dsh/dsh-plugin-term-guide/terms.json";
+const MEMORY = "/home/y/.dsh/dsh-learning-assistant/terms.json";
 const EXE = "/home/y/.cache/ms-playwright/chromium-1223/chrome-linux64/chrome";
 
 const browser = await chromium.launch({ executablePath: EXE, headless: true, args: ["--no-sandbox"] });
@@ -35,8 +35,8 @@ fs.writeFileSync(MEMORY, JSON.stringify(memory, null, 2));
 await page.waitForTimeout(9000);
 
 const before = await page.evaluate(() => {
-	const root = document.querySelector("[data-term-guide-panel]");
-	const scroller = document.querySelector("[data-term-guide-scroll]");
+	const root = document.querySelector("[data-learning-assistant-panel]");
+	const scroller = document.querySelector("[data-learning-assistant-scroll]");
 	if (!root || !scroller) return { found: false };
 	return {
 		found: true,
@@ -58,7 +58,7 @@ console.log("滚动容器:", JSON.stringify(before));
 
 // Scroll to the bottom and confirm the last card is on screen.
 const after = await page.evaluate(async () => {
-	const scroller = document.querySelector("[data-term-guide-scroll]");
+	const scroller = document.querySelector("[data-learning-assistant-scroll]");
 	if (!scroller) return { ok: false };
 	scroller.scrollTop = scroller.scrollHeight;
 	await new Promise((r) => setTimeout(r, 400));

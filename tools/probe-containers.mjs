@@ -3,7 +3,7 @@ import { chromium } from "playwright-core";
 import fs from "node:fs";
 
 const TOKEN_URL = process.argv[2];
-const MEMORY = "/home/y/.dsh/dsh-plugin-term-guide/terms.json";
+const MEMORY = "/home/y/.dsh/dsh-learning-assistant/terms.json";
 const EXE = "/home/y/.cache/ms-playwright/chromium-1223/chrome-linux64/chrome";
 
 const browser = await chromium.launch({ executablePath: EXE, headless: true, args: ["--no-sandbox"] });

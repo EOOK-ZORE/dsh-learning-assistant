@@ -1,11 +1,11 @@
-# dsh-plugin-term-guide · 术语向导
+# dsh-learning-assistant · 术语向导
 
 > AI 在回答时判断你未必听懂的**专业术语**，自动记进"记忆"，并在侧栏科普：一句话解释 + 从基础到该词的**探索树** + 搜索外链。越用越懂你已经会了什么。
 
 ## 它做了什么
 
 1. **判断**：Host 半往系统提示里注入一段规则——结合「你的水平档位」「解释倾向严格度」「记忆里你已经见过的词」，判断本次回答里哪些词值得解释。没有需要解释的词就不调用。
-2. **记录**：模型调用 `explain_terms` 工具，Host 把词条写入 `$DSH_HOME/dsh-plugin-term-guide/terms.json`。重复出现的词会累加 `count`（这是"你可能已经学会了"的证据）。
+2. **记录**：模型调用 `explain_terms` 工具，Host 把词条写入 `$DSH_HOME/dsh-learning-assistant/terms.json`。重复出现的词会累加 `count`（这是"你可能已经学会了"的证据）。
 3. **呈现**：**对话标题栏常驻一个「术语 N」按钮**（N = 全局词条数），点它打开右侧栏标签页。面板默认**只列本对话涉及的词**（记忆本身是全局的，跨对话不会重复解释），顶部可切「本对话 / 全部」。面板有「词条 / 知识树」两个视图：
    - **词条**：每个词一张卡片——解释、缩进学习路径、隶属/延伸跳转、维基/Google/Bing 外链；
    - **知识树**：按「隶属 → 延伸」组织的层级视图，节点显示分类与「延伸 N」，点击任一节点回到词条视图并定位。
@@ -20,15 +20,15 @@
 lib/index.js         Host 半（ESM）
   ├─ explain_terms 工具       ctx.tools.register(defineTool(...))
   ├─ 系统提示段落             ctx.systemPrompt.section(...)（动态读取记忆）
-  ├─ HTTP 路由 /term-guide/*  ctx.webServer.register({kind:'prefix'})
-  └─ 记忆文件                 $DSH_HOME/dsh-plugin-term-guide/terms.json
+  ├─ HTTP 路由 /learning-assistant/*  ctx.webServer.register({kind:'prefix'})
+  └─ 记忆文件                 $DSH_HOME/dsh-learning-assistant/terms.json
 
 lib/client.js        Client 半（构建产物，window.__ModuleLoader__ 格式）
   ├─ 常驻入口        ctx.slots.register('conversation.session.header.actions') → 「术语 N」按钮
   ├─ 标签类型        ctx.sidebarRightTabs.register({ id, kind, title })
   ├─ 标签主体        ctx.slots.register({ name: 'sidebar.right.pane.tab', key })
   ├─ 打开            ctx.sidebarRight.openTab(kind)（自动展开右栏）
-  └─ 轮询 /term-guide/state（5s + 窗口聚焦，在 apply 里跑）
+  └─ 轮询 /learning-assistant/state（5s + 窗口聚焦，在 apply 里跑）
 
 lib/core/guide.js    两端共享的纯逻辑（归一化 / 合并 / 外链模板）
 lib/core/highlight.js  正文高亮：CSS Custom Highlight + 点击命中（无悬浮气泡）
@@ -58,34 +58,34 @@ DSH_BIN=/path/to/dsh ./install.sh   # dsh 不在 PATH 时
 手动等价命令：
 
 ```bash
-dsh plugin --profile web add    /home/y/2026-11-13-11-29-22/dsh-plugin-term-guide
-dsh plugin --profile web remove dsh-plugin-term-guide      # 卸载
+dsh plugin --profile web add    /home/y/2026-11-13-11-29-22/dsh-learning-assistant
+dsh plugin --profile web remove dsh-learning-assistant      # 卸载
 ```
 
 ### 装载后的检查清单
 
 | 步骤 | 命令 / 现象 |
 |---|---|
-| 1. profile 是否登记 | `node -e "console.log(require('/home/y/.dsh/profiles/web/package.json').dsh.profile.bundles)"` 里应含 `dsh-plugin-term-guide` |
+| 1. profile 是否登记 | `node -e "console.log(require('/home/y/.dsh/profiles/web/package.json').dsh.profile.bundles)"` 里应含 `dsh-learning-assistant` |
 | 2. 启动（无需 `--patch`） | `dsh web --no-open --port 3080` |
 | 3. 取访问地址 | `tail -n 3 <日志>`，形如 `http://127.0.0.1:3080/?token=…` |
-| 4. 后端是否加载 | `curl -b <cookie> http://127.0.0.1:3080/term-guide/state` → 200 + JSON |
+| 4. 后端是否加载 | `curl -b <cookie> http://127.0.0.1:3080/learning-assistant/state` → 200 + JSON |
 | 5. 前端是否加载 | 对话标题栏出现「术语 N」按钮 |
 | 6. 端到端 | 问一个含专业缩写的问题，回答后侧栏应出现该词（标「自动补充」） |
 
 ### 更新
 
 - **本地目录装法**（`link:` 依赖）：重跑 `./install.sh` 即可，pnpm 会重新链接，重启 dsh 生效。
-- **npm 包装法**：`dsh plugin --profile web add dsh-plugin-term-guide@latest` 后重启。
+- **npm 包装法**：`dsh plugin --profile web add dsh-learning-assistant@latest` 后重启。
 - 面板里提示「如需升级，请卸载后重新安装」时，按上面的 remove + add 走一遍。
 
 ## 启用
 
 ```bash
-dsh web --patch /绝对路径/dsh-plugin-term-guide/cordis.patch.yml --no-open --port 3080
+dsh web --patch /绝对路径/dsh-learning-assistant/cordis.patch.yml --no-open --port 3080
 ```
 
-`--patch` 后面跟路径时，会把这个 overlay 叠在 profile 之上；`cordis.patch.yml` 里只有一行：插入 `term-guide` 这个 Host 半。Client 半不需要单独一行——`package.json` 的 `dsh.client` 声明会让客户端模块系统自动加载 `exports["./client"]`。
+`--patch` 后面跟路径时，会把这个 overlay 叠在 profile 之上；`cordis.patch.yml` 里只有一行：插入 `learning-assistant` 这个 Host 半。Client 半不需要单独一行——`package.json` 的 `dsh.client` 声明会让客户端模块系统自动加载 `exports["./client"]`。
 
 也可以把这一行加进 `~/.dsh/profiles/web/cordis.patch.yml`，让它在每次启动时自动生效。
 
@@ -123,11 +123,11 @@ node tools/selfcheck.mjs          # 两端 40+ 断言，零依赖
 
 | 方法 | 路径 | 作用 |
 |---|---|---|
-| GET | `/term-guide/state` | 读取词条 / 水平 / 严格度 |
-| POST | `/term-guide/level` | `{ level }` |
-| POST | `/term-guide/strictness` | `{ value }` |
-| POST | `/term-guide/forget` | `{ term }` 移除一个词条 |
-| POST | `/term-guide/clear` | 清空词条 |
+| GET | `/learning-assistant/state` | 读取词条 / 水平 / 严格度 |
+| POST | `/learning-assistant/level` | `{ level }` |
+| POST | `/learning-assistant/strictness` | `{ value }` |
+| POST | `/learning-assistant/forget` | `{ term }` 移除一个词条 |
+| POST | `/learning-assistant/clear` | 清空词条 |
 
 ## 数据模型
 
@@ -151,13 +151,13 @@ dsh 的「设置 → 插件 → 添加插件」接受三种输入：**npm 包名
 
 ```bash
 # 本地目录（未发布时用这个）
-dsh plugin --profile web add /home/y/2026-11-13-11-29-22/dsh-plugin-term-guide
+dsh plugin --profile web add /home/y/2026-11-13-11-29-22/dsh-learning-assistant
 
 # npm 包名（发布之后）
-dsh plugin --profile web add dsh-plugin-term-guide
+dsh plugin --profile web add dsh-learning-assistant
 
 # GitHub 仓库（仓库公开之后）
-dsh plugin --profile web add https://github.com/<你>/dsh-plugin-term-guide
+dsh plugin --profile web add https://github.com/<你>/dsh-learning-assistant
 ```
 
 这条命令会做三件事：把包写进 profile 的 `dependencies`、把它加进
@@ -170,20 +170,20 @@ dsh plugin --profile web add https://github.com/<你>/dsh-plugin-term-guide
 
 ```bash
 mkdir -p ~/.dsh/profiles/web/node_modules
-ln -sfn /home/y/2026-11-13-11-29-22/dsh-plugin-term-guide ~/.dsh/profiles/web/node_modules/dsh-plugin-term-guide
+ln -sfn /home/y/2026-11-13-11-29-22/dsh-learning-assistant ~/.dsh/profiles/web/node_modules/dsh-learning-assistant
 ```
 
 此时 profile 里没有 bundle 记录，启动要显式带 patch：
 
 ```bash
-dsh web --patch /home/y/2026-11-13-11-29-22/dsh-plugin-term-guide/cordis.patch.yml
+dsh web --patch /home/y/2026-11-13-11-29-22/dsh-learning-assistant/cordis.patch.yml
 ```
 
 ### 方式 C：从 tarball 安装（离线分发）
 
 ```bash
-npm pack                                                    # dsh-plugin-term-guide-0.2.0.tgz
-cd ~/.dsh/profiles/web && pnpm add /绝对路径/dsh-plugin-term-guide-0.2.0.tgz
+npm pack                                                    # dsh-learning-assistant-0.2.0.tgz
+cd ~/.dsh/profiles/web && pnpm add /绝对路径/dsh-learning-assistant-0.2.0.tgz
 ```
 
 > dsh 从 **profile 目录**解析裸包名（`~/.dsh/profiles/web/`），不是从安装 dsh 的目录，
@@ -192,10 +192,10 @@ cd ~/.dsh/profiles/web && pnpm add /绝对路径/dsh-plugin-term-guide-0.2.0.tgz
 ## 启用
 
 ```bash
-dsh web --patch /绝对路径/dsh-plugin-term-guide/cordis.patch.yml --no-open --port 3080
+dsh web --patch /绝对路径/dsh-learning-assistant/cordis.patch.yml --no-open --port 3080
 ```
 
-`--patch` 后面跟路径时，会把这个 overlay 叠在 profile 之上；`cordis.patch.yml` 里只有一行：插入 `term-guide` 这个 Host 半。Client 半不需要单独一行——`package.json` 的 `dsh.client` 声明会让客户端模块系统自动加载 `exports["./client"]`。
+`--patch` 后面跟路径时，会把这个 overlay 叠在 profile 之上；`cordis.patch.yml` 里只有一行：插入 `learning-assistant` 这个 Host 半。Client 半不需要单独一行——`package.json` 的 `dsh.client` 声明会让客户端模块系统自动加载 `exports["./client"]`。
 
 也可以把这一行加进 `~/.dsh/profiles/web/cordis.patch.yml`，让它在每次启动时自动生效。
 
@@ -233,11 +233,11 @@ node tools/selfcheck.mjs          # 两端 40+ 断言，零依赖
 
 | 方法 | 路径 | 作用 |
 |---|---|---|
-| GET | `/term-guide/state` | 读取词条 / 水平 / 严格度 |
-| POST | `/term-guide/level` | `{ level }` |
-| POST | `/term-guide/strictness` | `{ value }` |
-| POST | `/term-guide/forget` | `{ term }` 移除一个词条 |
-| POST | `/term-guide/clear` | 清空词条 |
+| GET | `/learning-assistant/state` | 读取词条 / 水平 / 严格度 |
+| POST | `/learning-assistant/level` | `{ level }` |
+| POST | `/learning-assistant/strictness` | `{ value }` |
+| POST | `/learning-assistant/forget` | `{ term }` 移除一个词条 |
+| POST | `/learning-assistant/clear` | 清空词条 |
 
 ## 数据模型
 
@@ -252,29 +252,29 @@ node tools/selfcheck.mjs          # 两端 40+ 断言，零依赖
 
 ## 安装
 
-包本身是独立目录（`dsh-plugin-term-guide/`），不依赖 dsh 的安装位置，也不在 dsh 安装目录内。
+包本身是独立目录（`dsh-learning-assistant/`），不依赖 dsh 的安装位置，也不在 dsh 安装目录内。
 三种装法任选其一。
 
 ### 方式 A：官方插件命令（推荐）
 
 ```bash
-dsh plugin --profile web add dsh-plugin-term-guide        # 已发布到 npm 时
-dsh plugin --profile web add /绝对路径/dsh-plugin-term-guide   # 本地目录
+dsh plugin --profile web add dsh-learning-assistant        # 已发布到 npm 时
+dsh plugin --profile web add /绝对路径/dsh-learning-assistant   # 本地目录
 ```
 
 ### 方式 B：手动软链（本机调试，最快）
 
 ```bash
 mkdir -p ~/.dsh/profiles/web/node_modules
-ln -sfn /绝对路径/dsh-plugin-term-guide ~/.dsh/profiles/web/node_modules/dsh-plugin-term-guide
+ln -sfn /绝对路径/dsh-learning-assistant ~/.dsh/profiles/web/node_modules/dsh-learning-assistant
 ```
 
 ### 方式 C：从 tarball 安装（离线分发）
 
 ```bash
-npm pack                       # 产出 dsh-plugin-term-guide-0.2.0.tgz（13 个文件 / 约 57 kB）
+npm pack                       # 产出 dsh-learning-assistant-0.2.0.tgz（13 个文件 / 约 57 kB）
 cd ~/.dsh/profiles/web
-npm install /绝对路径/dsh-plugin-term-guide-0.2.0.tgz
+npm install /绝对路径/dsh-learning-assistant-0.2.0.tgz
 ```
 
 > dsh 从 **profile 目录**解析裸包名（`~/.dsh/profiles/web/`），不是从安装 dsh 的目录，
@@ -313,7 +313,7 @@ npm publish        # publishConfig 已指向 registry.npmjs.org
 
 | 规范要求 | 本包做法 |
 |---|---|
-| 包名 `dsh-plugin-*` + `dsh-plugin` 关键词 | `dsh-plugin-term-guide`，keywords 含 `dsh-plugin` |
+| 包名 `dsh-plugin-*` + `dsh-plugin` 关键词 | `dsh-learning-assistant`，keywords 含 `dsh-plugin` |
 | `type: module`、`main`/`exports` 指向构建产物 | `main: lib/index.js`；`exports` 含 `.`、`./client`、`./cordis.patch.yml` |
 | 双面插件：Host 行 + `dsh.client` 声明 | `dsh.bundle.patch` + `dsh.client.platform: web` |
 | Client 半必须是构建产物 | `lib/client.js` 由 `npm run build` 生成，`--check` 防漂移 |
@@ -327,8 +327,8 @@ npm publish        # publishConfig 已指向 registry.npmjs.org
 - 入口是**对话头部按钮**而非右栏标签本身：右栏未展开时标签不可见，没有词条时更不会自动弹出——按钮保证任何会话里都能一键打开。
 - 右栏展开会压缩对话宽度；折叠/展开用对话头部右侧的侧栏开关，或点标签条上的关闭。
 - **时序**：平滑滚动的时长不可预测，所以两处都等"滚动真正停下"再动作——`guide.waitForScrollSettle()`（`scrollend` + 静默轮询 + 1.6s 兜底）。面板侧滚到位后再校验一次居中偏差（>12px 就即时补正）；正文侧先滚、等停、再开始脉冲，否则 3 段闪烁会在半路就烧完。
-- 双向定位靠事件 + 模块级交接：点击词由高亮层的 `onOpen(term)` 写入 `store.focus = { term, nonce }`，面板在 effect 里按 `[data-term-guide-card]` 找到卡片并 `scrollTo` 居中；双击卡片调用高亮层的 `flash(term)`，后者用独立高亮层 `term-guide-flash` 亮灭三次。卡片/滚动区锚点：`[data-term-guide-card]`、`[data-term-guide-scroll]`。
-- 滚动由面板自己负责：dsh 的右栏标签体是 `height:100%; overflow:hidden`（只裁不滚），所以根节点固定 `height:100%` + flex 列，表头 `flex:0 0 auto`，列表区 `flex:1; min-height:0; overflow-y:auto`。调试锚点：`[data-term-guide-panel]`、`[data-term-guide-scroll]`。
+- 双向定位靠事件 + 模块级交接：点击词由高亮层的 `onOpen(term)` 写入 `store.focus = { term, nonce }`，面板在 effect 里按 `[data-learning-assistant-card]` 找到卡片并 `scrollTo` 居中；双击卡片调用高亮层的 `flash(term)`，后者用独立高亮层 `learning-assistant-flash` 亮灭三次。卡片/滚动区锚点：`[data-learning-assistant-card]`、`[data-learning-assistant-scroll]`。
+- 滚动由面板自己负责：dsh 的右栏标签体是 `height:100%; overflow:hidden`（只裁不滚），所以根节点固定 `height:100%` + flex 列，表头 `flex:0 0 auto`，列表区 `flex:1; min-height:0; overflow-y:auto`。调试锚点：`[data-learning-assistant-panel]`、`[data-learning-assistant-scroll]`。
 - 正文高亮只标记**已在记忆里的词**（不标记内置词库），且只扫 `[data-conversation-scroll]` 内的散文节点，跳过 `code/pre/textarea` 与插件自身 UI。
 - 高亮用 CSS Custom Highlight API：不支持的浏览器自动降级为"只有面板，无正文标记"。
 - 观察器挂在 `document.body` 上而不是滚动容器：切换会话会替换容器，挂旧节点会静默失效。

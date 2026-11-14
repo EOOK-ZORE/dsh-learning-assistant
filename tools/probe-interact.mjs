@@ -64,7 +64,7 @@ const spot = await page.evaluate((term) => {
 		if (!hit || !root.contains(hit)) continue;
 		const caret = document.caretRangeFromPoint(cx, cy);
 		if (!caret || caret.startContainer !== node || caret.startOffset < at || caret.startOffset > at + term.length) continue;
-		const h = window.CSS?.highlights?.get?.("term-guide");
+		const h = window.CSS?.highlights?.get?.("learning-assistant");
 		return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2, rangeCount: h ? [...h].length : 0, inView: true };
 	}
 	return { error: "no visible occurrence after scroll" };
@@ -76,8 +76,8 @@ if (spot.x === undefined) {
 	console.log("跳过点击测试");
 } else {
 	const before = await page.evaluate(() => ({
-		panelOpen: Boolean(document.querySelector("[data-term-guide-panel]")),
-		scrollTop: document.querySelector("[data-term-guide-scroll]")?.scrollTop ?? null
+		panelOpen: Boolean(document.querySelector("[data-learning-assistant-panel]")),
+		scrollTop: document.querySelector("[data-learning-assistant-scroll]")?.scrollTop ?? null
 	}));
 	console.log("点击前:", JSON.stringify(before));
 
@@ -85,8 +85,8 @@ if (spot.x === undefined) {
 	await page.waitForTimeout(2500);
 
 	const afterClick = await page.evaluate((term) => {
-		const scroller = document.querySelector("[data-term-guide-scroll]");
-		const card = [...(scroller?.querySelectorAll("[data-term-guide-card]") ?? [])].find((n) => n.getAttribute("data-term-guide-card") === term);
+		const scroller = document.querySelector("[data-learning-assistant-scroll]");
+		const card = [...(scroller?.querySelectorAll("[data-learning-assistant-card]") ?? [])].find((n) => n.getAttribute("data-learning-assistant-card") === term);
 		if (!scroller || !card) return { panelOpen: Boolean(scroller), cardFound: false };
 		const sb = scroller.getBoundingClientRect();
 		const cb = card.getBoundingClientRect();
@@ -105,7 +105,7 @@ if (spot.x === undefined) {
 
 	// Double-click the card → transcript pulses.
 	const convBefore = await page.evaluate(() => document.querySelector("[data-conversation-scroll]").scrollTop);
-	const card = page.locator(`[data-term-guide-card="${TERM}"]`).first();
+	const card = page.locator(`[data-learning-assistant-card="${TERM}"]`).first();
 	if ((await card.count()) === 0) {
 		console.log("双击跳过：卡片未渲染");
 		await browser.close();
@@ -114,12 +114,12 @@ if (spot.x === undefined) {
 	await card.dblclick();
 	await page.waitForTimeout(120);
 	const flash = await page.evaluate(() => {
-		const h = window.CSS?.highlights?.get?.("term-guide-flash");
+		const h = window.CSS?.highlights?.get?.("learning-assistant-flash");
 		return { flashRanges: h ? [...h].length : 0, convScrollTop: Math.round(document.querySelector("[data-conversation-scroll]").scrollTop) };
 	});
 	console.log("双击卡片后:", JSON.stringify(flash), "| 对话滚动前:", Math.round(convBefore));
 	await page.waitForTimeout(1200);
-	const flashGone = await page.evaluate(() => Boolean(window.CSS?.highlights?.get?.("term-guide-flash")));
+	const flashGone = await page.evaluate(() => Boolean(window.CSS?.highlights?.get?.("learning-assistant-flash")));
 	console.log("闪烁结束后已清除:", !flashGone);
 	await page.screenshot({ path: "/tmp/dsh-interact.png", fullPage: false });
 }

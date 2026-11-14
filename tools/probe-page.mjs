@@ -1,4 +1,4 @@
-// Headless probe: does the term-guide client half actually activate in the page?
+// Headless probe: does the learning-assistant client half actually activate in the page?
 import { chromium } from "playwright-core";
 
 const TOKEN_URL = process.argv[2];
@@ -21,7 +21,7 @@ const report = await page.evaluate(() => {
   const termish = buttons.filter((b) => /术语|term/i.test(text(b) + (b.getAttribute("aria-label") ?? "")));
   const globals = Object.keys(window).filter((k) => /BOOT|AUDIT|MODULE/i.test(k));
   const boot = window.__DSH_BOOT__ ?? null;
-  const entry = boot?.entries?.find?.((e) => e.id === "dsh-plugin-term-guide") ?? null;
+  const entry = boot?.entries?.find?.((e) => e.id === "dsh-learning-assistant") ?? null;
   return {
     url: location.href.replace(/token=[^&]+/, "token=***"),
     title: document.title,

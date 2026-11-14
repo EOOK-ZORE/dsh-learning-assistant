@@ -36,8 +36,8 @@ await p.waitForTimeout(75000);
 
 const after = await p.evaluate(() => {
 	const tx = document.querySelector("[data-conversation-scroll]");
-	const panel = document.querySelector("[data-term-guide-panel]");
-	const h = CSS.highlights.get("term-guide");
+	const panel = document.querySelector("[data-learning-assistant-panel]");
+	const h = CSS.highlights.get("learning-assistant");
 	return {
 		answerChars: tx ? tx.innerText.length : 0,
 		saysSidebar: tx ? /侧栏补充|已在侧栏/.test(tx.innerText) : false,

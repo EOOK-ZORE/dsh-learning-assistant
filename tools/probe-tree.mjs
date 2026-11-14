@@ -55,7 +55,7 @@ await treeBtn.click();
 await page.waitForTimeout(900);
 
 const treeInfo = await page.evaluate(() => {
-	const nodes = [...document.querySelectorAll("[data-term-guide-tree-node]")];
+	const nodes = [...document.querySelectorAll("[data-learning-assistant-tree-node]")];
 	const depthOf = (el) => {
 		let depth = 0;
 		let node = el.parentElement;
@@ -67,8 +67,8 @@ const treeInfo = await page.evaluate(() => {
 	};
 	return {
 		count: nodes.length,
-		labels: nodes.map((n) => n.getAttribute("data-term-guide-tree-node")),
-		depths: nodes.map((n) => `${n.getAttribute("data-term-guide-tree-node")}@${depthOf(n)}`),
+		labels: nodes.map((n) => n.getAttribute("data-learning-assistant-tree-node")),
+		depths: nodes.map((n) => `${n.getAttribute("data-learning-assistant-tree-node")}@${depthOf(n)}`),
 		maxDepth: Math.max(...nodes.map(depthOf))
 	};
 });
@@ -76,13 +76,13 @@ console.log("知识树节点:", JSON.stringify(treeInfo, null, 1));
 await page.screenshot({ path: "/tmp/dsh-tree.png" });
 
 // Click a deep node → list view + that card focused.
-const deepNode = page.locator('[data-term-guide-tree-node="优先级反转"]').first();
+const deepNode = page.locator('[data-learning-assistant-tree-node="优先级反转"]').first();
 if (await deepNode.count()) {
 	await deepNode.click();
 	await page.waitForTimeout(2200);
 	const afterPick = await page.evaluate(() => {
-		const scroller = document.querySelector("[data-term-guide-scroll]");
-		const card = [...(scroller?.querySelectorAll("[data-term-guide-card]") ?? [])].find((n) => n.getAttribute("data-term-guide-card") === "优先级反转");
+		const scroller = document.querySelector("[data-learning-assistant-scroll]");
+		const card = [...(scroller?.querySelectorAll("[data-learning-assistant-card]") ?? [])].find((n) => n.getAttribute("data-learning-assistant-card") === "优先级反转");
 		return {
 			backToList: Boolean(scroller),
 			cardVisible: card ? (() => {
@@ -105,7 +105,7 @@ if (await link.count()) {
 	const result = await page.evaluate(() => ({
 		url: location.href.replace(/token=[^&]+/, "token=***"),
 		tabs: document.querySelectorAll("[data-sidebar-right-tab]").length,
-		notice: (document.querySelector("[data-term-guide-panel]")?.innerText || "").includes("链接已复制")
+		notice: (document.querySelector("[data-learning-assistant-panel]")?.innerText || "").includes("链接已复制")
 	}));
 	console.log("外链:", JSON.stringify({
 		urlUnchanged: result.url === urlBefore,
