@@ -1,0 +1,81 @@
+{
+  "name": "dsh-plugin-term-guide",
+  "version": "0.2.0",
+  "description": "术语向导：模型照常回答，插件补它没解释的专业词——右侧栏知识树 + 正文高亮 + 一句话解释与学习路径。",
+  "icon": "./icon.svg",
+  "keywords": [
+    "deepseek",
+    "deepseek-harness",
+    "dsh",
+    "dsh-plugin",
+    "glossary",
+    "dictionary",
+    "knowledge-tree",
+    "terminology",
+    "术语",
+    "知识树"
+  ],
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": {
+      "default": "./lib/index.js"
+    },
+    "./client": {
+      "default": "./lib/client.js"
+    },
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./icon.svg": "./icon.svg",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib/index.js",
+    "lib/client.js",
+    "lib/client.template.js",
+    "lib/core/*.js",
+    "lib/core/package.json",
+    "cordis.patch.yml",
+    "install.sh",
+    "icon.svg",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/crocodile-yzl/dsh-plugin-term-guide.git"
+  },
+  "bugs": {
+    "url": "https://github.com/crocodile-yzl/dsh-plugin-term-guide/issues"
+  },
+  "homepage": "https://github.com/crocodile-yzl/dsh-plugin-term-guide#readme",
+  "engines": {
+    "node": "^22.19.0 || >=24.0.0",
+    "dsh": ">=0.2.0-rc.2"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
+  },
+  "scripts": {
+    "build": "node tools/build-client.mjs",
+    "check": "node tools/build-client.mjs --check",
+    "test": "node tools/selfcheck.mjs",
+    "verify": "npm run check && npm run test",
+    "prepack": "npm run verify"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "slots",
+        "sidebarRight",
+        "sidebarRightTabs"
+      ]
+    }
+  }
+}

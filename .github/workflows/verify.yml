@@ -1,0 +1,19 @@
+name: verify
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      # 零依赖：构建产物校验 + 两端断言，不需要 npm install
+      - name: Artifact is up to date
+        run: node tools/build-client.mjs --check
+      - name: Self-check
+        run: node tools/selfcheck.mjs

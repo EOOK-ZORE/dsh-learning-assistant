@@ -1,0 +1,15 @@
+# Patch layer of the `dsh-plugin-term-guide` bundle.
+#
+# One row only: the package's own host half. The browser half is not a row —
+# `dsh.client` in package.json declares it, so the Client module system picks
+# the bundle up and loads `exports["./client"]` on the page.
+#
+# The host half owns the memory file and the HTTP surface the page reads.
+
+- insert:
+    - id: term-guide
+      name: 'dsh-plugin-term-guide'
+      config:
+        level: intermediate
+        strictness: 50
+        autoAdapt: true
