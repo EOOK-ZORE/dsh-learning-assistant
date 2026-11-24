@@ -4,6 +4,31 @@ All notable changes to this plugin are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] — 2026-11-24
+
+### Added
+- **总开关**：插件现在默认**关闭**，需要时再打开。关闭时不注入系统提示、不自动补充
+  新词、正文不高亮、也不把 `explain_terms` 的 schema 发给模型——每一轮的固定开销
+  归零；已收录的词条和你的水平/严格度设置都保留。
+- 开关状态存在 `terms.json` 的 `enabled` 字段里，重启后保持；面板顶部是带说明的开关，
+  对话标题栏的「术语」按钮会显示「关」并变虚，一眼能看出是关掉了而不是坏了。
+- `POST /learning-assistant/enabled` 路由；`GET /state` 返回值新增 `enabled`。
+- 新增 config 字段 `enabled`（默认 `false`），只在记忆文件还没有开关记录时生效。
+- 关闭态的空面板给出「开启术语向导」按钮，不用去翻开关。
+
+### Changed
+- `explain_terms` 改为条件激活（`tools.register(definition, { when })`）：关闭时整个
+  工具从模型可见列表里消失，而不只是不提示它调用。
+- 关闭时系统提示段返回空文本（组装器会丢弃空段），因此开关不需要重建注册。
+- 自检扩到 60 项，覆盖默认关闭、开启/关闭往返、提示与工具随开关变化、开关不被写词条
+  覆盖、面板与头部入口的两种状态；宿主包不在仓库里时用临时桩跑 Host 断言。
+
+## [0.3.2] — 2026-11-23
+
+### Changed
+- 自动补充的选词改由模型判断，不再依赖缩写正则，能覆盖 ViT、CLIP、Transformer、
+  LeRobot 以及中文术语；严格度只决定每次最多补几个。
+
 ## [0.2.1] — 2026-11-14
 
 ### Added

@@ -1,7 +1,7 @@
 {
   "name": "dsh-learning-assistant",
-  "version": "0.3.2",
-  "description": "术语向导：模型照常回答，插件补它没解释的专业词——右侧栏知识树 + 正文高亮 + 一句话解释与学习路径。",
+  "version": "0.4.0",
+  "description": "术语向导：模型照常回答，插件补它没解释的专业词——右侧栏知识树 + 正文高亮 + 一句话解释与学习路径。默认关闭，面板里一键开启。",
   "icon": "./icon.svg",
   "keywords": [
     "deepseek",
@@ -44,12 +44,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/crocodile-yzl/dsh-learning-assistant.git"
+    "url": "git+https://github.com/EOOK-ZORE/dsh-learning-assistant.git"
   },
   "bugs": {
-    "url": "https://github.com/crocodile-yzl/dsh-learning-assistant/issues"
+    "url": "https://github.com/EOOK-ZORE/dsh-learning-assistant/issues"
   },
-  "homepage": "https://github.com/crocodile-yzl/dsh-learning-assistant#readme",
+  "homepage": "https://github.com/EOOK-ZORE/dsh-learning-assistant#readme",
   "engines": {
     "node": "^22.19.0 || >=24.0.0",
     "dsh": ">=0.2.0-rc.2"

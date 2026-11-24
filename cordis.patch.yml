@@ -5,11 +5,17 @@
 # the bundle up and loads `exports["./client"]` on the page.
 #
 # The host half owns the memory file and the HTTP surface the page reads.
+#
+# `enabled` is only the STARTING value: the panel's master switch writes the
+# real state into `$DSH_HOME/dsh-learning-assistant/terms.json`, and from then on
+# that file wins. It is false on purpose — the guide explains words on its own,
+# so it runs when asked, not by default.
 
 - insert:
     - id: learning-assistant
       name: 'dsh-learning-assistant'
       config:
+        enabled: false
         level: intermediate
         strictness: 50
         autoAdapt: true

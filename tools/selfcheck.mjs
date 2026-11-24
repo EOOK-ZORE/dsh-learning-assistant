@@ -3,7 +3,7 @@ import vm from "node:vm";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const pluginDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 let failures = 0;
@@ -146,15 +146,49 @@ try {
 	ok("空状态渲染", false, error.message);
 }
 
+// The master switch: a real control in the panel, and a visible state on the
+// header entry so "off" is never confused with "broken".
+try {
+	const store = panelProps.store;
+	store.set({ terms: [], level: "intermediate", strictness: 50, error: null, enabled: false });
+	const offText = JSON.stringify(panel({ ...panelProps, store }));
+	ok("面板有总开关", offText.includes("data-learning-assistant-switch") && offText.includes('"role":"switch"'));
+	ok("关闭态有文案与一键开启", offText.includes("术语向导 · 已关闭") && offText.includes("开启术语向导"));
+
+	const entry = registered.find((r) => r.definition.id === "learning-assistant-entry")?.component;
+	const offEntry = JSON.stringify(entry());
+	ok("头部入口显示关闭态", offEntry.includes('"data-learning-assistant-entry":"off"') && offEntry.includes("关"));
+
+	store.set({ enabled: true });
+	const onText = JSON.stringify(panel({ ...panelProps, store }));
+	ok("开启态文案", onText.includes("术语向导 · 已开启") && !onText.includes("开启术语向导"));
+	ok("头部入口显示开启态", JSON.stringify(entry()).includes('"data-learning-assistant-entry":"on"'));
+} catch (error) {
+	ok("总开关渲染", false, error.message);
+}
+
 // ---------- 2. Host half ----------
 console.log("\n== 2) Host 半 ==");
 const home = fs.mkdtempSync(path.join(os.tmpdir(), "tg-home-"));
 process.env.DSH_HOME = home;
-const host = await import(path.join(pluginDir, "lib/index.js"));
+
+// `lib/index.js` imports the host's `@deepseek-ai/dsh-tools`, which a bare
+// checkout cannot resolve (the package ships inside the desktop application).
+// Run the host from a throwaway harness with a stub that keeps `defineTool`'s
+// contract: it returns the definition it was given.
+const harness = fs.mkdtempSync(path.join(os.tmpdir(), "tg-harness-"));
+fs.cpSync(path.join(pluginDir, "lib"), path.join(harness, "lib"), { recursive: true });
+const stubDir = path.join(harness, "node_modules", "@deepseek-ai", "dsh-tools");
+fs.mkdirSync(stubDir, { recursive: true });
+fs.writeFileSync(path.join(stubDir, "package.json"), JSON.stringify({ name: "@deepseek-ai/dsh-tools", version: "0.0.0-stub", type: "module", main: "index.js", exports: { ".": "./index.js" } }));
+fs.writeFileSync(path.join(stubDir, "index.js"), "export function defineTool(definition) { return definition; }\n");
+
+const host = await import(pathToFileURL(path.join(harness, "lib/index.js")).href);
 ok("host name", host.name === "learning-assistant", host.name);
 ok("host inject 含 tools/webServer", host.inject.includes("tools") && host.inject.includes("webServer"), JSON.stringify(host.inject));
 
 let toolDef;
+let toolOptions;
 let routeRegistration;
 let promptSection;
 const disposers = [];
@@ -164,7 +198,13 @@ const ctxHost = {
 		eventHandlers.push({ name, handler });
 		return () => {};
 	},
-	tools: { register: (def) => { toolDef = def; return () => {}; } },
+	tools: {
+		register: (def, options) => {
+			toolDef = def;
+			toolOptions = options;
+			return () => {};
+		}
+	},
 	webServer: { register: (opts) => { routeRegistration = opts; return () => {}; } },
 	effect: (fn) => { disposers.push(fn()); return () => {}; },
 	inject: (_names, cb) => {
@@ -179,6 +219,36 @@ ok("注册了 explain_terms 工具", toolDef?.name === "explain_terms", toolDef?
 ok("注册了 /learning-assistant 路由", routeRegistration?.path === "/learning-assistant", routeRegistration?.path);
 ok("注册了系统提示段", promptSection?.name === "learning-assistant");
 
+ok("默认关闭：工具条件激活为 false", typeof toolOptions?.when === "function" && toolOptions.when() === false, String(toolOptions?.when?.()));
+ok("默认关闭：系统提示段为空", (promptSection.text() ?? "") === "", JSON.stringify(promptSection.text()));
+const offResult = await toolDef.execute({ terms: [{ term: "关闭时不该记录" }] });
+ok("默认关闭：工具不落盘", offResult.saved === 0, JSON.stringify(offResult));
+
+// HTTP surface: the master switch is the drive for everything above.
+const { Readable } = await import("node:stream");
+const makeRes = () => ({
+	status: 0,
+	headers: null,
+	body: "",
+	writeHead(status, headers) { this.status = status; this.headers = headers; },
+	end(text) { this.body = text; }
+});
+const post = async (path, payload) => {
+	const res = makeRes();
+	await routeRegistration.handler(Object.assign(Readable.from(payload === undefined ? [] : [Buffer.from(JSON.stringify(payload))]), { method: "POST", url: `/learning-assistant${path}` }), res);
+	return res;
+};
+
+const res0 = makeRes();
+await routeRegistration.handler(Object.assign(Readable.from([]), { method: "GET", url: "/learning-assistant/state" }), res0);
+ok("GET /state 200", res0.status === 200, String(res0.status));
+ok("state 默认关闭", JSON.parse(res0.body).enabled === false, res0.body.slice(0, 120));
+
+const onRes = await post("/enabled", { enabled: true });
+ok("POST /enabled 开启", JSON.parse(onRes.body).enabled === true, onRes.body.slice(0, 120));
+ok("开启后工具条件激活为 true", toolOptions.when() === true);
+ok("开启后系统提示非空", (promptSection.text() ?? "").includes("术语向导"));
+
 const result = await toolDef.execute({
 	terms: [
 		{ term: "A2A 协议", explanation: "让不同厂商的 AI 代理互相通信的开放协议。", category: "智能体", confidence: 0.8, tree: [{ label: "单个 Agent" }, { label: "多 Agent 协作", children: [{ label: "A2A 协议" }] }] },
@@ -189,40 +259,44 @@ const result = await toolDef.execute({
 });
 ok("工具返回 saved=2", result.saved === 2, JSON.stringify(result));
 ok("严格度自适应 +10", result.strictness === 60, String(result.strictness));
+ok("开关状态不会被写词条改掉", JSON.parse(fs.readFileSync(path.join(home, "dsh-learning-assistant", "terms.json"), "utf8")).enabled === true);
 const memoryFile = path.join(home, "dsh-learning-assistant", "terms.json");
 ok("记忆文件已写入", fs.existsSync(memoryFile));
 const memory = JSON.parse(fs.readFileSync(memoryFile, "utf8"));
 ok("记忆含 2 个词条", memory.terms.length === 2, String(memory.terms.length));
 ok("自动补了搜索外链", memory.terms.every((t) => Array.isArray(t.links) && t.links.length >= 2));
+// The prompt text is cached for a few seconds per step; re-applying the switch
+// clears that cache, which is also how the panel makes a change take effect now.
+await post("/enabled", { enabled: true });
 ok("系统提示含记忆摘要", (promptSection.text() ?? "").includes("KV Cache"));
 const promptText = promptSection.text();
 ok("系统提示含水平说明", promptText.includes("用户水平"));
 ok("系统提示含严格度", promptText.includes("60/100"));
 
-// HTTP surface: GET /state through the registered handler
-const { Readable } = await import("node:stream");
-const fakeRes = {
-	status: 0,
-	headers: null,
-	body: "",
-	writeHead(status, headers) { this.status = status; this.headers = headers; },
-	end(text) { this.body = text; }
-};
-await routeRegistration.handler(Object.assign(Readable.from([]), { method: "GET", url: "/learning-assistant/state" }), fakeRes);
-ok("GET /state 200", fakeRes.status === 200, String(fakeRes.status));
-const state = JSON.parse(fakeRes.body);
+const state = JSON.parse((await (async () => {
+	const res = makeRes();
+	await routeRegistration.handler(Object.assign(Readable.from([]), { method: "GET", url: "/learning-assistant/state" }), res);
+	return res;
+})()).body);
 ok("state 含词条", state.terms.length === 2);
 ok("state 含 level", state.level === "intermediate");
+ok("state 含 enabled", state.enabled === true);
 
 // POST /level
-const res2 = { status: 0, body: "", writeHead(s) { this.status = s; }, end(t) { this.body = t; } };
-await routeRegistration.handler(Object.assign(Readable.from([Buffer.from(JSON.stringify({ level: "expert" }))]), { method: "POST", url: "/learning-assistant/level" }), res2);
+const res2 = await post("/level", { level: "expert" });
 ok("POST /level 生效", JSON.parse(res2.body).level === "expert", res2.body);
 
 // POST /forget
-const res3 = { status: 0, body: "", writeHead(s) { this.status = s; }, end(t) { this.body = t; } };
-await routeRegistration.handler(Object.assign(Readable.from([Buffer.from(JSON.stringify({ term: "KV Cache" }))]), { method: "POST", url: "/learning-assistant/forget" }), res3);
+const res3 = await post("/forget", { term: "KV Cache" });
 ok("POST /forget 生效", JSON.parse(res3.body).terms.length === 1, res3.body);
+
+// Switch back off: the rules must leave the prompt immediately.
+const offRes = await post("/enabled", { enabled: false });
+ok("POST /enabled 关闭", JSON.parse(offRes.body).enabled === false, offRes.body.slice(0, 120));
+ok("关闭后工具条件激活为 false", toolOptions.when() === false);
+ok("关闭后系统提示立即清空", (promptSection.text() ?? "") === "", JSON.stringify(promptSection.text()));
+ok("关闭后词条仍在", JSON.parse(offRes.body).terms.length === 1, offRes.body.slice(0, 200));
+
 
 // ---------- 3. Inline highlighting ----------
 console.log("\n== 3) 正文高亮 ==");
@@ -308,6 +382,20 @@ ok("只保留对话里出现的词", scoped.length === 1 && scoped[0].term === "
 ok("大小写不敏感", guide.filterTermsForText([{ term: "vla" }], "VLA 是模型").length === 1);
 ok("空对话返回空", guide.filterTermsForText(allTerms, "").length === 0);
 ok("无关对话返回空", guide.filterTermsForText(allTerms, "今天天气不错").length === 0);
+
+// ---------- 7. Master switch ----------
+console.log("\n== 7) 总开关 ==");
+ok("只把 true 当作开启", guide.normalizeEnabled(true) === true && guide.normalizeEnabled("true") === false && guide.normalizeEnabled(1) === false);
+const blank = guide.emptyMemory("beginner", 30);
+ok("空记忆默认关闭", blank.enabled === false);
+ok("可以显式开启", guide.emptyMemory("beginner", 30, true).enabled === true);
+const merged = guide.mergeTerms(
+	{ ...blank, enabled: true },
+	[{ term: "X", explanation: "", tree: [], links: [] }],
+	{ now: new Date(), level: "beginner" }
+);
+ok("写词条不会改动开关", merged.enabled === true);
+ok("不是开关的旧记忆当作关闭", guide.mergeTerms(blank, [], { now: new Date(), level: "beginner" }).enabled === false);
 
 console.log(`\n${failures === 0 ? "全部通过 ✅" : `${failures} 项失败 ❌`}`);
 process.exit(failures === 0 ? 0 : 1);
